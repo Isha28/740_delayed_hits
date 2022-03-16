@@ -21,6 +21,7 @@ int csize;
 /*
  * declare all functions
  */
+int size = 5000, hitrate = 0, fetchTime = 3, missrate = 0;
 
 bool isPresentInCache(int);
 
@@ -36,6 +37,7 @@ int addPacket(int packetArrivalTime, int x)
     int totalLatency, packetServiceTime, timeToFetch;
 
     if (isPresentInCache(x)) {
+	  hitrate++;
           if (packet_queue.find(x) != packet_queue.end()) {
               if (packetArrivalTime <= packet_queue[x]) {
                         return packet_queue[x] - packetArrivalTime;
@@ -54,13 +56,14 @@ int addPacket(int packetArrivalTime, int x)
 	  }
     }
     else {
+	 missrate++;
 	 if (cache_queue.size() != csize) {
 	    cache_queue.push_front(x);
 	    return 0;
 	 }
 	 else {
 	 	if (packet_queue.find(x) == packet_queue.end()) {
-		timeToFetch = 10;
+		timeToFetch = fetchTime;
 		totalLatency = timeToFetch;
 		packetServiceTime = timeToFetch + packetArrivalTime;	
 		packet_queue[x] = packetServiceTime;
@@ -76,7 +79,6 @@ int addPacket(int packetArrivalTime, int x)
 }
 void showCache()
 {
-    cout << "Showing cache " << endl;
     for (auto it = cache_queue.begin(); it != cache_queue.end(); it++)
         cout << (*it) << " ";
  
@@ -95,7 +97,7 @@ bool isPresentInCache(int x)
 
 int main()
 {
-    csize = 2;
+    csize = 4;
     int i, idx, total = 0;
     int input[5000]; // index is timestamp, value is flow id
     string fname = "trace.csv";
@@ -118,20 +120,14 @@ int main()
          }
      }
     
-/* 
-    for ( i = 0 ; i < 5000; i++)
-	  cout << input[i] << " ";     
-*/
-
-    int input1[10] = {1,1,2,3};
-
-    cout << endl;
+    //orig input
+    //int input1[10] = {1,1,2,3};
 
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     int j = 0;
-    while (j < 4) {  //TODO change this
-	int res = addPacket(j,input1[j]); // TODO change this
+    while (j < size) {  //TODO change this
+	int res = addPacket(j,input[j]); // TODO change this
 	total += res;
 	j++;
     }
@@ -139,8 +135,8 @@ int main()
     showCache();
 
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-    std::cout << "Time execution time = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
-    cout << "Total latency " << total << endl;
+    std::cout << "LRU Time execution time = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
+    cout << "Total latency " << total << " hit_rate " << hitrate << " miss_rate " << missrate << endl;
     
     return 0;
 }
