@@ -145,7 +145,7 @@ int addPacket(int packetArrivalTime, int x)
 		}
 		*/
 		 
-		// Eviction should be based on least cost agg delay/TTNA value within window Z for Belatedly
+		// Eviction should be based on least cost agg delay/TTNA value within window Z 
 		int leastFreq = INT_MAX, leastCostElement = 0;
 		for (auto it = leastCostDelayMap.begin(); it != leastCostDelayMap.end(); it++) {
 			if ((*it).second < leastFreq) {
