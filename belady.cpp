@@ -71,7 +71,7 @@ int evictPacket (int packetArrivalTime) {
 
 int addPacket(int packetArrivalTime, int x) 
 {
-    /* Z is the ratio of object fetch time to 
+    /* Z is computed with object fetch time to 
      * request inter-arrival time
      */
     int totalLatency, packetServiceTime, Z;
