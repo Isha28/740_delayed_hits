@@ -12,63 +12,87 @@ using namespace std;
 // cache as list
 list<int> cache_queue;
  
-// store checkCacheences of key in cache - ISHA doubt
+/* map containing packet's service time 
+ * during cache miss and used for computing
+ * aggregate delay for delayed hits
+ */
 unordered_map<int, int> packet_queue;
 
-// maximum cache size
+// cache size
 int csize; 
 
+// Trace containing 5000 requests
 int size = 5000;
 int input[5000];
-int fetchTime = 3, hitrate = 0, missrate = 0;
-
-/*
- * declare all functions
- */
+int defFetchTime = 0, fetchTime = 3, hitrate = 0, missrate = 0;
 
 void showCache();
 bool isPresentInCache(int);
 
+/* This function adds an object in the cache, 
+ * tracks hit rate, miss rate, total latency
+ * to add the object. In case of cache miss, 
+ * it evicts an object from the cache based 
+ * on relevant caching algorithm. Additionaly,
+ * the latency caused due to delayed hits is 
+ * tracked.
+ */
+
 int addPacket(int packetArrivalTime, int x) 
 {
+    /* Z is computed with object fetch time to 
+     * request inter-arrival time
+     */
     int totalLatency, packetServiceTime, Z;
 
     if (isPresentInCache(x)) {
+	  // As object present in cache, hit rate is incremented
 	  hitrate++;
+	    
+	  /* If there exists a queue for the object due to previous
+	   * cache miss, need to take into account the aggregate 
+	   * delay caused for the arrival of burst of requests for 
+	   * same object till the time the cache miss is resolved
+	   */
 	  if (packet_queue.find(x) != packet_queue.end()) {
 	      if (packetArrivalTime <= packet_queue[x]) {
 			return packet_queue[x] - packetArrivalTime;
 		}
 		else {
 			packet_queue.erase(x);
+			return defFetchTime;
 		}
 	  }
-	  else
-		return 0;
+	  else {
+		// When the object is in cache, consider zero latency 
+		return defFetchTime;
+	  }
     }
     else {
+	 // As object not present in cache, miss rate is incremented
 	 missrate++;
 	 if (cache_queue.size() < csize) {
+		// If the cache can accomodate new object, insert
           	cache_queue.push_front(x);
           	return 0;
     	 }
 	 else {
-	 //Not present in cache, because cache size already exceeded, i. do blocking read, ii. wait if blocking read is already ongoing - insert packet to appropriate packet queue
-	 //If no queue present, this is first blocking read
-	 if (packet_queue.find(x) == packet_queue.end()) {
+		// If the cache is already full, object eviction is done
 		Z = fetchTime;
 		totalLatency = Z;
 		packetServiceTime = Z + packetArrivalTime;	
 		packet_queue[x] = packetServiceTime;
  
-		//Eviction should be based on least delay cost
-		//check if this element - agg delay has lower cost 
+		// Eviction should be based on least cost delay
+		// Calculate the request inter-arrival time for the object 
 		int cnt = 0;
-		for (int i = packetArrivalTime; i < packetArrivalTime + fetchTime && i < size; i++) {  //input array size is 10
+		for (int i = packetArrivalTime; i < packetArrivalTime + fetchTime && i < size; i++) {  
 		    if (x == input[i]) {
 			   cnt++;
 		    }
-		}	
+		}
+		 
+		// Calculate Z factor to be used for aggregate delay calculation
 		if (cnt != 0) {
 			Z = fetchTime*cnt;
 		}
@@ -76,6 +100,7 @@ int addPacket(int packetArrivalTime, int x)
 			Z = fetchTime;
 		}
 
+		// This map tracks the delay cost for the cache objects
 		map<int,int> leastCostDelayMap;
 		for (auto it = cache_queue.begin(); it != cache_queue.end(); it++) {
 			for (int i = packetArrivalTime; i < packetArrivalTime +  Z && i < size; i++) {
@@ -87,6 +112,7 @@ int addPacket(int packetArrivalTime, int x)
 			}
 		}
 
+		// Compute the aggregated delay for cache objects
 		for (auto it = leastCostDelayMap.begin(); it != leastCostDelayMap.end(); it++) {
            		if ((*it).second == 0)
 				continue;
@@ -98,7 +124,28 @@ int addPacket(int packetArrivalTime, int x)
                         	add -= 1;
                 	}
         	}
+		 
+		/*
+		// Find TTNA of all elements in cache
+		map <int,int> ttna;
+		for (auto it = cache_queue.begin(); it != cache_queue.end(); it++) {
+			ttna[(*it)] = -1;
+			for (int i = packetArrivalTime; i < packetArrivalTime +  Z && i < size; i++) {
+				if (input[i] == (*it)) {
+					ttna[(*it)] = i-packetArrivalTime;
+					break;
+				}
+			}
+		}
 
+		// Compute agg_delay/TTNA for cache objects
+		for (auto it = leastCostDelayMap.begin(); it != leastCostDelayMap.end(); it++) {
+			int ttna_val = ttna[(*it).first];
+			leastCostDelayMap[(*it).first] = (*it).second/ttna_val; 
+		}
+		*/
+		 
+		// Eviction should be based on least cost agg delay/TTNA value within window Z for Belatedly
 		int leastFreq = INT_MAX, leastCostElement = 0;
 		for (auto it = leastCostDelayMap.begin(); it != leastCostDelayMap.end(); it++) {
 			if ((*it).second < leastFreq) {
@@ -115,7 +162,6 @@ int addPacket(int packetArrivalTime, int x)
 			
 		cache_queue.push_front(x);
 		return totalLatency;
-		}
 	    }
       }
 }
@@ -128,21 +174,23 @@ void showCache()
     cout << endl;
 }
 
+// Return true if object is already present in cache, else false
 bool isPresentInCache(int x)
 {
-	for (auto it = cache_queue.begin(); it != cache_queue.end(); it++)
+    for (auto it = cache_queue.begin(); it != cache_queue.end(); it++)
     {
-		if (*it == x)
-			return 1;
-	}
-	return 0;
+	if (*it == x)
+	    return 1;
+    }
+    return 0;
 }
 
 int main()
 {
-    csize = 16;
+    csize = 16; // cache size
     int i, idx, total = 0;
-    //int input[5000]; // index is timestamp, value is flow id
+    
+    // parser to encode packet arrival time and flow id from trace
     string fname = "trace.csv";
     string line, word;
 		 
@@ -162,21 +210,12 @@ int main()
 	      }
          }
      }
-    
-    /*orig input
-    input[0] = 1;
-    input[1] = 2;
-    input[2] = 3;
-    input[3] = 1;
-    input[4] = 2;
-    input[5] = 2;
-    */
 
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     int j = 0;
-    while (j < size) {  //TODO change this
-	int res = addPacket(j,input[j]); // TODO change this
+    while (j < size) {  
+	int res = addPacket(j,input[j]);
 	total += res;
 	j++;
     }
@@ -185,7 +224,7 @@ int main()
 
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "BELADY AGG DELAY Time execution time = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
-    cout << "Total latency " << total << " hit_rate " << hitrate << " miss_rate " << missrate << endl;
+    cout << "Total latency " << total << " hit_rate " << hitrate/5000 << " miss_rate " << missrate/5000 << endl;
     
     return 0;
 }
