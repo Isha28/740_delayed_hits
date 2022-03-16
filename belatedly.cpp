@@ -213,8 +213,8 @@ int main()
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     int j = 0;
-    while (j < size) {  //TODO change this
-	int res = addPacket(j,input[j]); // TODO change this
+    while (j < size) {  
+	int res = addPacket(j,input[j]); 
 	total += res;
 	j++;
     }
