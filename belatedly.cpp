@@ -77,7 +77,7 @@ int addPacket(int packetArrivalTime, int x)
           	return defFetchTime;
     	 }
 	 else {
-		// If the cache is already full, object eviction is done
+		if (packet_queue.find(x) == packet_queue.end()) {
 		Z = fetchTime;
 		totalLatency = Z;
 		packetServiceTime = Z + packetArrivalTime;	
@@ -161,6 +161,7 @@ int addPacket(int packetArrivalTime, int x)
 			
 		cache_queue.push_front(x);
 		return totalLatency;
+		}
 	    }
       }
 }
@@ -186,7 +187,7 @@ bool isPresentInCache(int x)
 
 int main()
 {
-    csize = 4; // cache size
+    csize = 32; // cache size
     int i, idx, total = 0;
    
     // parser to encode packet arrival time and flow id from trace
@@ -221,9 +222,10 @@ int main()
 
     showCache();
 
+    float hit = (float)hitrate/(float)5000, miss = (float)missrate/(float)5000;
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "BELATEDLY Time execution time = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
-    cout << "Total latency " << total << " hit_rate " << hitrate/5000 << " miss_rate " << missrate/5000 << endl;
+    cout << "Total latency " << total << " hit_rate " << hit << " miss_rate " << miss << endl;
     
     return 0;
 }

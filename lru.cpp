@@ -149,9 +149,10 @@ int main()
 
     showCache();
 
+    float hit = (float)hitrate/(float)5000, miss = (float)missrate/(float)5000;
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "LRU Time execution time = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
-    cout << "Total latency " << total << " hit_rate " << hitrate/5000 << " miss_rate " << missrate/5000 << endl;
+    cout << "Total latency " << total << " hit_rate " << hit << " miss_rate " << miss << endl;
     
     return 0;
 }
