@@ -26,7 +26,6 @@ int size = 5000;
 int input[5000];
 int defFetchTime = 0, hitrate = 0, missrate = 0, fetchTime = 3;
 
-void showCache();
 bool isPresentInCache(int);
 
 /* This function adds an object in the cache, 
@@ -82,7 +81,7 @@ int addPacket(int packetArrivalTime, int x)
           	return 0;
     	}
 	else {
-		// If the cache is already full, object eviction is done
+	     if (packet_queue.find(x) == packet_queue.end()) {
 		Z = fetchTime;
 		totalLatency = Z;
 		packetServiceTime = Z + packetArrivalTime;	
@@ -131,7 +130,6 @@ int addPacket(int packetArrivalTime, int x)
                 	}
         	}
 		
-		/*
 		// Find TTNA of all elements in cache for past requests in LRU cache queue
 		map <int,int> ttna;
 		for (auto it = cache_queue.begin(); it != cache_queue.end(); it++) {
@@ -148,7 +146,6 @@ int addPacket(int packetArrivalTime, int x)
 			int ttna_val = ttna[(*it).first];
 			leastCostDelayMap[(*it).first] = (*it).second/ttna_val; 
 		}
-		*/
 
 		// Eviction should be based on least cost agg delay/TTNA value within window Z 
 		int leastFreq = INT_MAX, leastCostElement = 0;
@@ -167,16 +164,9 @@ int addPacket(int packetArrivalTime, int x)
 		
 		cache_queue.push_front(x);
 		return totalLatency;
-	    } 
+	      }
+	   } 
       }
-}
-
-void showCache()
-{
-    for (auto it = cache_queue.begin(); it != cache_queue.end(); it++)
-        cout << (*it) << " ";
- 
-    cout << endl;
 }
 
 // Return true if object is already present in cache, else false
@@ -192,7 +182,7 @@ bool isPresentInCache(int x)
 
 int main()
 {
-    csize = 4; // cache size
+    csize = 16; // cache size
     int i, idx, total = 0;
     
     // parser to encode packet arrival time and flow id from trace
@@ -224,8 +214,6 @@ int main()
 	total += res;
 	j++;
     }
-
-    showCache();
 
     float hit = (float)hitrate/(float)5000, miss = (float)missrate/(float)5000;
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();

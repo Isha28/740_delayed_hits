@@ -78,7 +78,7 @@ int addPacket(int packetArrivalTime, int x)
 	    return defFetchTime;
 	 }
 	 else {
-		// If the cache is already full, object eviction is done
+	     if (packet_queue.find(x) == packet_queue.end()) {
 		timeToFetch = fetchTime;
 		totalLatency = timeToFetch;
 		packetServiceTime = timeToFetch + packetArrivalTime;	
@@ -89,15 +89,9 @@ int addPacket(int packetArrivalTime, int x)
 		cache_queue.push_front(x);
 
 		return totalLatency;
+	     }
 	  }
     }
-}
-void showCache()
-{
-    for (auto it = cache_queue.begin(); it != cache_queue.end(); it++)
-        cout << (*it) << " ";
- 
-    cout << endl;
 }
 
 // Return true if object is already present in cache, else false
@@ -113,7 +107,7 @@ bool isPresentInCache(int x)
 
 int main()
 {
-    csize = 4; // cache size
+    csize = 16; // cache size
     int i, idx, total = 0;
     int input[5000];
 	
@@ -146,8 +140,6 @@ int main()
 	total += res;
 	j++;
     }
-
-    showCache();
 
     float hit = (float)hitrate/(float)5000, miss = (float)missrate/(float)5000;
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();

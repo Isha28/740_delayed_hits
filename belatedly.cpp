@@ -26,7 +26,6 @@ int size = 5000;
 int input[5000];
 int defFetchTime = 0, fetchTime = 3, hitrate = 0, missrate = 0;
 
-void showCache();
 bool isPresentInCache(int);
 
 /* This function adds an object in the cache, 
@@ -77,7 +76,7 @@ int addPacket(int packetArrivalTime, int x)
           	return defFetchTime;
     	 }
 	 else {
-		if (packet_queue.find(x) == packet_queue.end()) {
+	    if (packet_queue.find(x) == packet_queue.end()) {
 		Z = fetchTime;
 		totalLatency = Z;
 		packetServiceTime = Z + packetArrivalTime;	
@@ -161,17 +160,9 @@ int addPacket(int packetArrivalTime, int x)
 			
 		cache_queue.push_front(x);
 		return totalLatency;
-		}
+	      }
 	    }
       }
-}
-
-void showCache()
-{
-    for (auto it = cache_queue.begin(); it != cache_queue.end(); it++)
-        cout << (*it) << " ";
- 
-    cout << endl;
 }
 
 // Return true if object is already present in cache, else false
@@ -219,8 +210,6 @@ int main()
 	total += res;
 	j++;
     }
-
-    showCache();
 
     float hit = (float)hitrate/(float)5000, miss = (float)missrate/(float)5000;
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
