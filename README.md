@@ -26,3 +26,6 @@ isha@node0:~/740_delayed_hits$ ./a.out
 BELATEDLY Time execution time = 107982[µs]
 
 Total latency 5350 hit_rate 0.2918 miss_rate 0.7082
+
+
+To change cache size, change csize parameter in cpp files. This directory contains belady.cpp, belady_MAD.cpp, belatedly.cpp, lru.cpp, lru_MAD.cpp files in addition to a trace input file. 
