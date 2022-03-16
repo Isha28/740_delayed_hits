@@ -11,6 +11,8 @@ g++ <filename>.cpp
 
 Sample:
 isha@node0:~/740_delayed_hits$ g++ belatedly.cpp
+  
 isha@node0:~/740_delayed_hits$ ./a.out
+  
 BELATEDLY Time execution time = 107982[µs]
 Total latency 5350 hit_rate 0.2918 miss_rate 0.7082
