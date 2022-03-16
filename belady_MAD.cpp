@@ -123,24 +123,6 @@ int addPacket(int packetArrivalTime, int x)
                 	}
         	}
 		 
-		// Find TTNA of all elements in cache
-		map <int,int> ttna;
-		for (auto it = cache_queue.begin(); it != cache_queue.end(); it++) {
-			ttna[(*it)] = -1;
-			for (int i = packetArrivalTime; i < packetArrivalTime +  Z && i < size; i++) {
-				if (input[i] == (*it)) {
-					ttna[(*it)] = i-packetArrivalTime;
-					break;
-				}
-			}
-		}
-
-		// Compute agg_delay/TTNA for cache objects
-		for (auto it = leastCostDelayMap.begin(); it != leastCostDelayMap.end(); it++) {
-			int ttna_val = ttna[(*it).first];
-			leastCostDelayMap[(*it).first] = (*it).second/ttna_val; 
-		}
-		 
 		// Eviction should be based on least cost agg delay/TTNA value within window Z 
 		int leastFreq = INT_MAX, leastCostElement = 0;
 		for (auto it = leastCostDelayMap.begin(); it != leastCostDelayMap.end(); it++) {
