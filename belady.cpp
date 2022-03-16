@@ -12,24 +12,27 @@ using namespace std;
 // cache as list
 list<int> cache_queue;
  
-// store checkCacheences of key in cache - ISHA doubt
+/* map containing packet's service time 
+ * during cache miss and used for computing
+ * aggregate delay for delayed hits
+ */
 unordered_map<int, int> packet_queue;
 
-// maximum cache size
+// cache size
 int csize; 
 
+// Trace containing 5000 requests
 int size = 5000;
 int input[5000];
-int fetchTime = 3, hitrate = 0, missrate = 0;
 
-/*
- * declare all functions
- */
+int defFetchTime = 0, fetchTime = 3, hitrate = 0, missrate = 0;
 
 void showCache();
 bool isPresentInCache(int);
 
-
+/* This function evicts object in cache whose  
+ * request is farthest compared to other objects.
+ */
 int evictPacket (int packetArrivalTime) {
     int res = -1, later_seen = packetArrivalTime;
     for (auto it = cache_queue.begin(); it != cache_queue.end(); it++) {
@@ -44,6 +47,10 @@ int evictPacket (int packetArrivalTime) {
             }
         }
 
+	/* If the request for this object is not seen 
+	 * in the future, it is returned as a potential
+	 * object to be evicted from cache
+	 */
         if (j == size) {
             return (*it);
         }
@@ -53,43 +60,61 @@ int evictPacket (int packetArrivalTime) {
 
 }
 
+/* This function adds an object in the cache, 
+ * tracks hit rate, miss rate, total latency
+ * to add the object. In case of cache miss, 
+ * it evicts an object from the cache based 
+ * on relevant caching algorithm. Additionaly,
+ * the latency caused due to delayed hits is 
+ * tracked.
+ */
+
 int addPacket(int packetArrivalTime, int x) 
 {
+    /* Z is the ratio of object fetch time to 
+     * request inter-arrival time
+     */
     int totalLatency, packetServiceTime, Z;
 
     if (isPresentInCache(x)) {
+	  // As object present in cache, hit rate is incremented
 	  hitrate++;
+	    
+	  /* If there exists a queue for the object due to previous
+	   * cache miss, need to take into account the aggregate 
+	   * delay caused for the arrival of burst of requests for 
+	   * same object till the time the cache miss is resolved
+	   */
 	  if (packet_queue.find(x) != packet_queue.end()) {
 	      if (packetArrivalTime <= packet_queue[x]) {
 			return packet_queue[x] - packetArrivalTime;
 		}
 		else {
 			packet_queue.erase(x);
+			return defFetchTime;
 		}
 	  }
-	  else
-		return 0;
+	  else {
+		// When the object is in cache, consider zero latency 
+		return defFetchTime;
+	  }
     }
     else {
+	  // As object not present in cache, miss rate is incremented
 	  missrate++;
 	  if (cache_queue.size() < csize) {
+		// If the cache can accomodate new object, insert
           	cache_queue.push_front(x);
-          	return 0;
+          	return defFetchTime;
 	  }
 	  else {
-
-	 //Not present in cache, because cache size already exceeded, i. do blocking read, ii. wait if blocking read is already ongoing - insert packet to appropriate packet queue
-	 //If no queue present, this is first blocking read
-	 if (packet_queue.find(x) == packet_queue.end()) {
+		// If the cache is already full, object eviction is done
 		Z = fetchTime;
 		totalLatency = Z;
 		packetServiceTime = Z + packetArrivalTime;	
 		packet_queue[x] = packetServiceTime;
- 
-		//Eviction should be for element which appears later_seen in input
 
 		int evict = evictPacket (packetArrivalTime);
-
 		if (evict == 0)
 			cache_queue.pop_back();
 		else
@@ -97,9 +122,8 @@ int addPacket(int packetArrivalTime, int x)
 		
 		cache_queue.push_front(x);
 		return totalLatency;
-	    }
-	}
-    }
+	  }
+     }
 }
 
 void showCache()
@@ -110,21 +134,23 @@ void showCache()
     cout << endl;
 }
 
+// Return true if object is already present in cache, else false
 bool isPresentInCache(int x)
 {
-	for (auto it = cache_queue.begin(); it != cache_queue.end(); it++)
+    for (auto it = cache_queue.begin(); it != cache_queue.end(); it++)
     {
-		if (*it == x)
-			return 1;
-	}
-	return 0;
+	if (*it == x)
+	    return 1;
+    }
+    return 0;
 }
 
 int main()
 {
-    csize = 16;
+    csize = 16; // cache size
     int i, idx, total = 0;
-    //int input[5000]; // packetArrivalTime is timestamp, value is flow id
+
+    // parser to encode packet arrival time and flow id from trace
     string fname = "trace.csv";
     string line, word;
 		 
@@ -144,33 +170,12 @@ int main()
 	      }
          }
      }
-    
-    /*orig input
-    input[0] = 1;
-    input[1] = 2;
-    input[2] = 3;
-    input[3] = 1;
-    input[4] = 2;
-    input[5] = 2;
-     */
-
-    /* belatedly input - same output for both
-    input[0] = 1;
-    input[1] = 2;
-    input[2] = 3;
-    input[3] = 2;
-    input[4] = 2;
-    input[5] = 2;
-    input[6] = 1;
-    input[7] = 1;
-    input[8] = 1;
-    */
 
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     int j = 0;
-    while (j < size) {  //TODO change this
-	int res = addPacket(j,input[j]); // TODO change this
+    while (j < size) {  
+	int res = addPacket(j,input[j]);
 	total += res;
 	j++;
     }
@@ -179,7 +184,7 @@ int main()
 
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "BELADY Time execution time = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
-    cout << "Total latency " << total << " hit_rate " << hitrate << " miss_rate " << missrate << endl;
+    cout << "Total latency " << total << " hit_rate " << hitrate/5000 << " miss_rate " << missrate/5000 << endl;
     
     return 0;
 }
